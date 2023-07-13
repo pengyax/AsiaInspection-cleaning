@@ -10,7 +10,7 @@ def replace_defect_code(df):
     return df.replace({'Defect Code':{'.*Functional.*':'Functional', '.*Dimensional.*':'Dimensional', '.*Foreign Particulate.*':'Foreign Particulate', '.*Packaging/Labeling.*':'Labeling', '.*Visual.*':'Visual'}}, regex=True)
 
 def assign_disposition_type(df):
-    return df.assign(**{'Disposition Type' : lambda d : d['Disposition Type'].map({'Return to Supplier':'rework', 'Accept As Is':'deviation', 'Forward to QA':'deviation'})})
+    return df.assign(**{'Disposition Type' : lambda d : d['Disposition Type'].map({'Return to Supplier':'rework', 'Accept As Is':'deviation', 'Forward to QA':'deviation'}).fillna('unknown')})
 
 def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
     qim_his = df_add[df_add['Path'] == 'QIM']['ID'].to_list()
@@ -85,4 +85,4 @@ if __name__ == "__main__":
     df_2022 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2022.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_2023 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2023.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_add = pd.concat([df_2023,df_2022])
-    add_ins_data(df_inspection_status,df_NCMR,df_sharepoint,df_add,std).to_excel('224.xlsx',index = False)
+    add_ins_data(df_inspection_status,df_NCMR,df_sharepoint,df_add,std).to_excel('225.xlsx',index = False)

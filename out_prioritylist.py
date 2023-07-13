@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import database_cleaning as dc
+from sql_engine import connect
 
 
 def out_status(df_add,df_new,df_product_family):
@@ -69,22 +70,26 @@ def out_status(df_add,df_new,df_product_family):
     .iloc[:,[0,2]]
 )
 
-    with pd.ExcelWriter('../output/Audit Status.xlsx') as writer:
-        df_item.to_excel(writer,sheet_name='items')
-        df_product.to_excel(writer,sheet_name='product_family')
     print('Audit Status完成')
     print('===='*6)
         
+    list1 = ['NONEX0023FALLMED INDUSTRIAL LIMITED']    
     df_reject = (
     df_duplicate
     .sort_values(['item_key','Inspection Date',],ascending=[False,False])
     .groupby(['item_key'])[['item_key','Inspection Date','Results','Reject Code']].head(5)
-    .query('`Reject Code` == "Functional"')
+    .query('`Reject Code` == "Functional" and item_key not in @list1')
     .loc[:,'item_key']
-    .drop_duplicates()
+    .drop_duplicates() 
 )   
-    df_reject.to_excel('../output/rej_key.xlsx')
     print('rej_key完成')
+    print('===='*6)
+    
+    with pd.ExcelWriter('../output/Audit Status.xlsx') as writer:
+        df_item.to_excel(writer,sheet_name='items')
+        df_product.to_excel(writer,sheet_name='product_family')
+        df_reject.to_excel(writer,sheet_name='rek_key')
+    print('写入完成')
     print('===='*6)
 
 if __name__ == "__main__":
@@ -94,14 +99,9 @@ if __name__ == "__main__":
     # inspection_status_no = 71070
     # std = '2022-01-01'
     # df_sharepoint = pd.read_excel('../Book1.xlsx')
+    fn_engine = connect('fn_mysql')
     
-    df_2018 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2018.XLSM',sheet_name="Sheet1")
-    df_2019 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2019.XLSM',sheet_name="Sheet1")
-    df_2020 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2020.XLSM',sheet_name="Sheet1")
-    df_2021 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2021.XLSM',sheet_name="Sheet1")
-    df_2022 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2022.XLSM',sheet_name="Sheet1")
-    df_2023 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2023.XLSM',sheet_name="Sheet1")
-    df_add = pd.concat([df_2023,df_2022,df_2021,df_2020,df_2019,df_2018]) 
+    df = pd.read_sql('select * from inspection_data_all',fn_engine)
     print('加载历史数据完成')
     print('===='*6)
     
@@ -110,5 +110,5 @@ if __name__ == "__main__":
     
     print('运算开始')
     print('===='*6)
-    out_status(df_add,df_new,df_product_family)
+    out_status(df,df_new,df_product_family)
     print('完成')
