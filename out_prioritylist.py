@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import database_cleaning as dc
 from sql_engine import connect
+from datetime import datetime
 
 
 def out_status(df_add,df_new,df_product_family):
@@ -45,6 +46,7 @@ def out_status(df_add,df_new,df_product_family):
 )
 
     df_duplicate = pd.concat([df_QIM_duplicate,df_offline_duplicate])
+    df_duplicate['Inspection Date'] = pd.to_datetime(df_duplicate['Inspection Date'])
     print('去重完成')
     print('===='*6)
 
@@ -82,6 +84,15 @@ def out_status(df_add,df_new,df_product_family):
     .loc[:,'item_key']
     .drop_duplicates() 
 )   
+    
+    df_overdue = (
+    df_duplicate
+    .sort_values(['Vendor','Inspection Date',],ascending=[False,False])
+    .groupby('Vendor')[['ID','Vendor','Inspection Date']].head(1)
+    .assign(Days_Difference =  lambda d : (datetime.today() - d["Inspection Date"]).dt.days)
+    .assign(Overdue = lambda d : d['Days_Difference'].apply(lambda s : True if s >90 else False))
+    .query('Overdue == True')
+    )
     print('rej_key完成')
     print('===='*6)
     
@@ -89,6 +100,7 @@ def out_status(df_add,df_new,df_product_family):
         df_item.to_excel(writer,sheet_name='items')
         df_product.to_excel(writer,sheet_name='product_family')
         df_reject.to_excel(writer,sheet_name='rek_key')
+        df_overdue.to_excel(writer,sheet_name='overdue')
     print('写入完成')
     print('===='*6)
 

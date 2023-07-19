@@ -68,9 +68,13 @@ def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
     .query('ID not in @qim_his')
     .pipe(lambda d : pd.concat([d,df_sharepoint]))
     .drop(columns = ['Document Links','Item Type','Combine inspection'])
-    .assign(**{"Item Number" : lambda d : d['Item Number'].apply(pad_item)})
-    .assign(**{'Reject Code' : lambda d : d['Reject Code'].mask(d['Results'] == "A",None)})
+    .assign(**{'Item Number' : lambda d : d['Item Number'].str.strip()})
+    .assign(**{"Item Number" : lambda d : d['Item Number'].apply(pad_item),
+               'Reject Code' : lambda d : d['Reject Code'].mask(d['Results'] == "A",None),
+               'PO Number' : lambda d : d['PO Number'].str.strip()
+               })
     .query('ID not in (7923,1)')
+    .query('~Inspector.str.contains("Charles",na = False)')
 )
     return df_new
 
@@ -82,7 +86,8 @@ if __name__ == "__main__":
     std = '2022-01-01'
     df_sharepoint = pd.read_excel('../Book1.xlsx')
     
+   
     df_2022 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2022.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_2023 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2023.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_add = pd.concat([df_2023,df_2022])
-    add_ins_data(df_inspection_status,df_NCMR,df_sharepoint,df_add,std).to_excel('225.xlsx',index = False)
+    add_ins_data(df_inspection_status,df_NCMR,df_sharepoint,df_add,std).to_excel('newadd.xlsx',index = False)
