@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import database_cleaning as dc
 from sql_engine import connect
-from datetime import datetime
+from datetime import datetime,timedelta
 
 
 def out_status(df_add,df_product_family):
@@ -113,15 +113,28 @@ def out_status(df_add,df_product_family):
     print('overdue完成')
     print('===='*6)
     
+    date_2year = datetime.today() - timedelta(days = 365*2)
+    
     df_unNewItem = (
     df_duplicate
-    .query('Results in ("A","R")')
+    .query('Results in ("A","R") and `Inspection Date` >= @date_2year')
     .groupby(['Vendor','Item Number'],as_index=False).size()
     .query('size >= 5')
     .assign(**{
         "newItem" : lambda d : d['Item Number'].str.cat(d['Vendor'])
         })
 )
+    df_overdue_6month = (
+    df_base
+    .sort_values(['Vendor','Item Number','Inspection Date',],ascending=[True,False,False])
+    .groupby(['Vendor','Item Number'])[['ID','Vendor','Item Number','Inspection Date']].head(1)
+    .assign(Days_Difference =  lambda d : (datetime.today() - d["Inspection Date"]).dt.days)
+    .assign(Overdue = lambda d : d['Days_Difference'].apply(lambda s : True if s >180 else False))
+    .query('Overdue == True')
+    .assign(**{
+        "key" : lambda d : d['Item Number'].str.cat(d['Vendor'])
+        })
+    )
     
     
     with pd.ExcelWriter('../output/Audit Status.xlsx') as writer:
@@ -130,6 +143,7 @@ def out_status(df_add,df_product_family):
         df_reject.to_excel(writer,sheet_name='rek_key')
         df_overdue.to_excel(writer,sheet_name='overdue')
         df_unNewItem.to_excel(writer,sheet_name='unNewItem')
+        df_overdue_6month.to_excel(writer,sheet_name='overdue_6month')
     print('写入完成')
     print('===='*6)
 
