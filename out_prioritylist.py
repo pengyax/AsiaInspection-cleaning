@@ -59,7 +59,7 @@ def out_status(df_add,df_product_family):
     .query('Results == "A"')
     .groupby('item_key').size().reset_index()
     .set_axis(['item_key','count'],axis=1)
-    .assign(judge = lambda d : d['count'].apply(lambda s :'N' if s<5 else 'Y' ))
+    .assign(judge = lambda d : d['count'].apply(lambda s :'Y' if s<5 else 'N' ))
     .iloc[:,[0,2]]
 )
     
@@ -70,7 +70,7 @@ def out_status(df_add,df_product_family):
     .query('Results == "A"')
     .groupby('product_family_key').size().reset_index()
     .set_axis(['product_family_key','count'],axis=1)
-    .assign(judge = lambda d : d['count'].apply(lambda s :'N' if s<5 else 'Y' ))
+    .assign(judge = lambda d : d['count'].apply(lambda s :'Y' if s<5 else 'N' ))
     .iloc[:,[0,2]]
 )
 
@@ -113,11 +113,12 @@ def out_status(df_add,df_product_family):
     print('overdue完成')
     print('===='*6)
     
-    date_2year = datetime.today() - timedelta(days = 365*2)
+    date_2year = datetime.today() - timedelta(days = 365*5)
     
     df_unNewItem = (
     df_duplicate
-    .query('Results in ("A","R") and `Inspection Date` >= @date_2year')
+    # .query('Results in ("A","R") and `Inspection Date` >= @date_2year')
+    .query('`Inspection Date` >= @date_2year')
     .groupby(['Vendor','Item Number'],as_index=False).size()
     .query('size >= 5')
     .assign(**{
@@ -174,6 +175,7 @@ if __name__ == "__main__":
                     inspection_data_all
                 '''
     df = pd.read_sql(sql_query,fn_engine)
+    df = df.loc[df['Inspection Date'] <= pd.to_datetime("2023-8-1").date()]
     print('加载历史数据完成')
     print('===='*6)
     

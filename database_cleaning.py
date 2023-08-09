@@ -18,7 +18,7 @@ def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
     rename = {'Inspection Number':'ID',
           'PO Number':'PO Number',
           'Lot Number':'Lot Number',
-          'Supplier Number':'Vendor code',
+          'Supplier Number':'Vendor Code',
           'Supplier Name':'Vendor',
           'Factory':'Factory',
           'Division':'Division',
@@ -85,6 +85,7 @@ if __name__ == "__main__":
     inspection_status_no = 71070
     std = '2022-01-01'
     df_sharepoint = pd.read_excel('../Book1.xlsx')
+    df_sharepoint.rename(columns={'Vendor code':'Vendor Code'},inplace=True)
     
    
     df_2022 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2022.XLSM',sheet_name="Sheet1",usecols="A,U")
