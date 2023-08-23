@@ -5,12 +5,15 @@ def pad_item(item):
         if str(item).isdigit() and len(str(item)) < 5:
             item = str(item).zfill(5)
         return item
+# item补零
 
 def replace_defect_code(df):
     return df.replace({'Defect Code':{'.*Functional.*':'Functional', '.*Dimensional.*':'Dimensional', '.*Foreign Particulate.*':'Foreign Particulate', '.*Packaging/Labeling.*':'Labeling', '.*Visual.*':'Visual'}}, regex=True)
+# 清洗标准化Defect Code
 
 def assign_disposition_type(df):
     return df.assign(**{'Disposition Type' : lambda d : d['Disposition Type'].map({'Return to Supplier':'rework', 'Accept As Is':'deviation', 'Forward to QA':'deviation'}).fillna('unknown')})
+# 清洗标准化Disposition Type
 
 def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
     qim_his = df_add[df_add['Path'] == 'QIM']['ID'].to_list()
@@ -47,6 +50,7 @@ def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
         .assign(Comments = lambda d : d['NCMR Number'].str.cat([d['Disposition Type'],d['Defect Code']],sep=','))
         .loc[:,['NCMR Number','Description','Defect Code','Disposition Type','Current Phase','Comments']]
 )
+    # 清洗NCMR数据
     
     df_new = (
     df_inspection_status
@@ -76,6 +80,7 @@ def add_ins_data(df_inspection_status,df_ncmr,df_sharepoint,df_add,std):
     .query('ID not in (7923,1)')
     .query('~Inspector.str.contains("Charles",na = False)')
 )
+    # 读取inspection_status数据，并关联NCMR，输出新的QETQ验货数据
     return df_new
 
 if __name__ == "__main__":
@@ -86,9 +91,10 @@ if __name__ == "__main__":
     std = '2022-01-01'
     df_sharepoint = pd.read_excel('../Book1.xlsx')
     df_sharepoint.rename(columns={'Vendor code':'Vendor Code'},inplace=True)
-    
+    # df_sharepoint数据
    
     df_2022 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2022.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_2023 = pd.read_excel(r'C:\Medline\database\Asia Inspection Database\2022\QP-00017-F-00005 Asia Inspection Database 2023.XLSM',sheet_name="Sheet1",usecols="A,U")
     df_add = pd.concat([df_2023,df_2022])
     add_ins_data(df_inspection_status,df_NCMR,df_sharepoint,df_add,std).to_excel('newadd.xlsx',index = False)
+    # 生成新增数据集

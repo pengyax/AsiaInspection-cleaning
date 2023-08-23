@@ -17,7 +17,10 @@ def out_status(df_add,df_product_family):
     })
     .drop_duplicates(subset=['Material Number'],keep='last')
 )
+    # 读取product_family映射表
+    
     df_uninspection = df.loc[df['Results'].isin(['G','W'])]
+    # 将验货数据分为”验货“和”免验“
     
     df_inspection = (
     df
@@ -32,6 +35,7 @@ def out_status(df_add,df_product_family):
         product_family_key = lambda d : d['Product Family'].map(str)+d['Vendor'].map(str)
     )
 )
+    # 验货数据关联product_family
     
     df_QIM_duplicate = (
     df_inspection
@@ -39,6 +43,7 @@ def out_status(df_add,df_product_family):
     .sort_values(['ID','Inspection Date'],ascending=[False,False])
     .drop_duplicates(subset=['ID'],keep='last')
 )
+    # ETQ数据去重
     
     df_offline_duplicate = (
     df_inspection
@@ -46,6 +51,7 @@ def out_status(df_add,df_product_family):
     .sort_values(['ID','Inspection Date'],ascending=[False,False])
     .drop_duplicates(subset=['Lot Number','Vendor','Item Number','Inspector','Inspection Date'],keep='last')
 )
+    # 现在数据去重
 
     df_duplicate = pd.concat([df_QIM_duplicate,df_offline_duplicate])
     # df_duplicate['Inspection Date'] = pd.to_datetime(df_duplicate['Inspection Date'])
@@ -62,6 +68,7 @@ def out_status(df_add,df_product_family):
     .assign(judge = lambda d : d['count'].apply(lambda s :'Y' if s<5 else 'N' ))
     .iloc[:,[0,2]]
 )
+    # 计算item结果
     
     df_product = (
     df_duplicate
@@ -73,6 +80,7 @@ def out_status(df_add,df_product_family):
     .assign(judge = lambda d : d['count'].apply(lambda s :'Y' if s<5 else 'N' ))
     .iloc[:,[0,2]]
 )
+    # 计算product_family结果
 
     print('Audit Status完成')
     print('===='*6)
@@ -86,6 +94,7 @@ def out_status(df_add,df_product_family):
     .loc[:,'item_key']
     .drop_duplicates() 
 )   
+    # 计算功能性拒收
     print('rej_key完成')
     print('===='*6)
     
@@ -100,6 +109,7 @@ def out_status(df_add,df_product_family):
     .assign(Time_Diff = lambda d : d['Time_Diff'].fillna((datetime.today() - d["Inspection Date"]).dt.days))
 )
     idx = df_timeDiff.groupby("Vendor").apply(lambda x: x[x["Time_Diff"] > 90].index[0] if any(x["Time_Diff"] > 90) else None)
+    # 返回分组中Time_Diff大于90的第一个索引
     
     df_overdue = (
     df_timeDiff
@@ -110,6 +120,7 @@ def out_status(df_add,df_product_family):
     .query('Count < 5')
     .loc[:,['Vendor','Time_Diff_x','Inspection Date_x','Inspection Date_y','Count']]
 )
+    # 计算3个月未验货结果
     print('overdue完成')
     print('===='*6)
     
@@ -125,6 +136,8 @@ def out_status(df_add,df_product_family):
         "newItem" : lambda d : d['Item Number'].str.cat(d['Vendor'])
         })
 )
+    # 计算newitem
+    
     df_overdue_6month = (
     df_base
     .sort_values(['Vendor','Item Number','Inspection Date',],ascending=[True,False,False])
@@ -136,6 +149,7 @@ def out_status(df_add,df_product_family):
         "key" : lambda d : d['Item Number'].str.cat(d['Vendor'])
         })
     )
+    # 计算6个月未验货结果
     
     
     with pd.ExcelWriter('../output/Audit Status.xlsx') as writer:
@@ -175,7 +189,7 @@ if __name__ == "__main__":
                     inspection_data_all
                 '''
     df = pd.read_sql(sql_query,fn_engine)
-    df = df.loc[df['Inspection Date'] <= pd.to_datetime("2023-8-1").date()]
+    # df = df.loc[df['Inspection Date'] <= pd.to_datetime("2023-8-1").date()]
     print('加载历史数据完成')
     print('===='*6)
     
